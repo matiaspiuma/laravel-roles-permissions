@@ -1,7 +1,7 @@
 {
     "name": "bhhaskin/laravel-roles-permissions",
     "description": "Roles and permissions support for Laravel applications.",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "type": "library",
     "license": "MIT",
     "authors": [

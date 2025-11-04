@@ -172,3 +172,35 @@ it('supports object level roles and permissions when enabled', function () {
 
     expect($user->hasRole('project-editor', $post))->toBeFalse();
 });
+
+it('syncs roles for a specific context when object permissions are enabled', function () {
+    config(['roles-permissions.object_permissions.enabled' => true]);
+
+    $user = User::create(['name' => 'Alice', 'email' => 'alice@example.com', 'password' => 'password']);
+    $post = Post::create(['title' => 'Post 1']);
+
+    $admin = Role::create(['name' => 'Admin', 'slug' => 'admin']);
+    $editor = Role::create(['name' => 'Editor', 'slug' => 'editor']);
+    $viewer = Role::create(['name' => 'Viewer', 'slug' => 'viewer']);
+
+    // Assign admin role to user for this post
+    $user->assignRole($admin, $post);
+    $user->refresh();
+
+    expect($user->hasRole('admin', $post))->toBeTrue();
+    expect($user->hasRole('editor', $post))->toBeFalse();
+
+    // Sync to editor role - should replace admin with editor
+    $user->syncRoles($editor, $post);
+    $user->refresh();
+
+    expect($user->hasRole('admin', $post))->toBeFalse();
+    expect($user->hasRole('editor', $post))->toBeTrue();
+
+    // Sync to viewer role - should replace editor with viewer
+    $user->syncRoles($viewer, $post);
+    $user->refresh();
+
+    expect($user->hasRole('editor', $post))->toBeFalse();
+    expect($user->hasRole('viewer', $post))->toBeTrue();
+});

@@ -2,11 +2,12 @@
 
 namespace Bhhaskin\RolesPermissions\Traits;
 
+use Bhhaskin\RolesPermissions\Exceptions\ObjectPermissionsDisabledException;
+use Bhhaskin\RolesPermissions\Exceptions\RoleScopeMismatchException;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use LogicException;
 
 trait HasRoles
 {
@@ -381,7 +382,9 @@ trait HasRoles
         }
 
         if ($enforceScope) {
-            throw new LogicException('Role scope does not match the provided context.');
+            $roleScope = $role->scope ?? null;
+            $contextScope = $context ? $this->determineRoleScope($context) : null;
+            throw RoleScopeMismatchException::make((string) $roleScope, $contextScope);
         }
 
         return null;
@@ -435,7 +438,7 @@ trait HasRoles
     protected function ensureObjectPermissionsEnabled(?EloquentModel $model): void
     {
         if ($model && ! $this->objectPermissionsEnabled()) {
-            throw new LogicException('Object level permissions are disabled.');
+            throw ObjectPermissionsDisabledException::make();
         }
     }
 
@@ -570,14 +573,14 @@ trait HasRoles
         $relation = $this->roles();
         $pivotKey = $relation->getRelatedPivotKeyName();
 
-        $relation->wherePivot($typeColumn, $model->getMorphClass())
+        $query = $relation->wherePivot($typeColumn, $model->getMorphClass())
             ->wherePivot($idColumn, $model->getKey());
 
         if (! empty($roleIds)) {
-            $relation->wherePivotNotIn($pivotKey, $roleIds);
+            $query = $query->wherePivotNotIn($pivotKey, $roleIds);
         }
 
-        $relation->detach();
+        $query->detach();
     }
 
     protected function detachPermissionAssignmentsNotInContext(EloquentModel $model, array $permissionIds): void
@@ -587,13 +590,13 @@ trait HasRoles
         $relation = $this->permissions();
         $pivotKey = $relation->getRelatedPivotKeyName();
 
-        $relation->wherePivot($typeColumn, $model->getMorphClass())
+        $query = $relation->wherePivot($typeColumn, $model->getMorphClass())
             ->wherePivot($idColumn, $model->getKey());
 
         if (! empty($permissionIds)) {
-            $relation->wherePivotNotIn($pivotKey, $permissionIds);
+            $query = $query->wherePivotNotIn($pivotKey, $permissionIds);
         }
 
-        $relation->detach();
+        $query->detach();
     }
 }

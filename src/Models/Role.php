@@ -12,7 +12,12 @@ class Role extends Model
 {
     use HasFactory;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'name',
+        'slug',
+        'description',
+        'scope',
+    ];
 
     protected $casts = [
         'name' => 'string',
@@ -50,6 +55,21 @@ class Role extends Model
                 $role->uuid = (string) Str::uuid();
             }
         });
+    }
+
+    protected function setSlugAttribute(?string $value): void
+    {
+        $this->attributes['slug'] = $value ? Str::lower(trim($value)) : null;
+    }
+
+    protected function setNameAttribute(?string $value): void
+    {
+        $this->attributes['name'] = $value ? trim($value) : null;
+    }
+
+    protected function setDescriptionAttribute(?string $value): void
+    {
+        $this->attributes['description'] = $value ? trim($value) : null;
     }
 
     public function getRouteKeyName(): string
